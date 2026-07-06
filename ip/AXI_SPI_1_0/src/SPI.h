@@ -1,5 +1,5 @@
 /**
- * @file SPI_AXI.h
+ * @file SPI.h
  * @version 0.1
  * @date 2026-07-04
  * 

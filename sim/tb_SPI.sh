@@ -1,9 +1,9 @@
 # code
-nvc -a ../code/src/edge_detector.vhd
-nvc -a ../code/src/SPI.vhd
+nvc -a ../ip/AXI_SPI_1_0/src/edge_detector.vhd
+nvc -a ../ip/AXI_SPI_1_0/src/SPI.vhd
 
 # testbench
-nvc -a ../code/testbench/tb_SPI.vhd
+nvc -a ../testbench/tb_SPI.vhd
 
 # elaborate
 nvc -e SPI_tb

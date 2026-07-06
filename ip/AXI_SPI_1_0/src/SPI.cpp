@@ -1,5 +1,5 @@
 /**
- * @file SPI_AXI.cpp
+ * @file SPI.cpp
  * @version 0.1
  * @date 2026-07-04
  *
