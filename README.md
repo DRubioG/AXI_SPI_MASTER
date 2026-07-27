@@ -1,6 +1,8 @@
 # AXI_SPI_MASTER
 This is an SPI IP block with the Arduino drivers.
 
+![block image](./img/block_image.png)
+
 ## Registers
 
 ### CNTRL
