@@ -74,6 +74,8 @@ entity AXI_SPI_v1_0_S_AXI is
     MOSI : out std_logic;
     --! Señal MISO(Master Input Slave Output).
     MISO : in std_logic;
+    --! Señal CS(Chip Select). Pin opcional, no utilizado en Arduino puro.
+    CS : out std_logic;
 
     -- User ports ends
     -- Do not modify the ports beyond this line
@@ -143,6 +145,8 @@ end AXI_SPI_v1_0_S_AXI;
 
 architecture arch_imp of AXI_SPI_v1_0_S_AXI is
 
+  --! Señal de interconexión entre el registro de Ready que igual que la señal CS.
+  signal s_CS : std_logic;
   -- AXI4LITE signals
   signal axi_awaddr  : std_logic_vector(C_S_AXI_ADDR_WIDTH - 1 downto 0);
   signal axi_awready : std_logic;
@@ -456,12 +460,17 @@ begin
       SPI_WRITE16_I    => slv_reg0(2),
       SPI_WRITE_DATA_I => slv_reg1(15 downto 0),
       SPI_READ_DATA_O  => slv_reg2(15 downto 0),
-      SPI_READY_O      => slv_reg2(16),
+      SPI_CS_READY_O   => s_CS,
       SCK_O            => SCK,
       MOSI_O           => MOSI,
       MISO_I           => MISO
     );
 
+  --! Asignación de la salida de CS.
+  CS_ASSIGN : CS <= s_CS;
+
+  --! Asignación de la señal de Ready directa a registro.
+  READY : slv_reg2(16) <= s_CS;
   -- User logic ends
 
 end arch_imp;

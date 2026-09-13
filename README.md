@@ -1,6 +1,15 @@
 # AXI_SPI_MASTER
 This is an SPI IP block with the Arduino drivers.
 
+![block image](/img/block_ip.png)
+
+### Arduino block
+This block is the Arduino block. CS port goes in other block.
+
+![block image](./img/block_image_arduino.png)
+
+### Non Arduino block
+This block is the non Arduino block, this block is creates the CS signal to help.
 ![block image](./img/block_image.png)
 
 ## Registers

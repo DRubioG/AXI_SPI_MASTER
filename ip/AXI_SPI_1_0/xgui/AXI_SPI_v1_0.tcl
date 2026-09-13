@@ -5,8 +5,18 @@ proc init_gui { IPINST } {
   set Page_0 [ipgui::add_page $IPINST -name "Page 0"]
   ipgui::add_param $IPINST -name "G_FPGA_FREQ" -parent ${Page_0}
   ipgui::add_param $IPINST -name "G_FREQ_SPI" -parent ${Page_0}
+  ipgui::add_param $IPINST -name "CS_active" -parent ${Page_0}
 
 
+}
+
+proc update_PARAM_VALUE.CS_active { PARAM_VALUE.CS_active } {
+	# Procedure called to update CS_active when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.CS_active { PARAM_VALUE.CS_active } {
+	# Procedure called to validate CS_active
+	return true
 }
 
 proc update_PARAM_VALUE.G_FPGA_FREQ { PARAM_VALUE.G_FPGA_FREQ } {

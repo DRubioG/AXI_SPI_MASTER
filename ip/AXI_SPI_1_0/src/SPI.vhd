@@ -6,7 +6,7 @@
 --!   { name: "SPI_WRITE8_I",     wave: "l.hl.|....", data: ["WRITE"] , "phase":0.5},
 --!   { name: "SPI_WRITE_DATA_I", wave: "l3.0.|....", data: ["data"] , "phase":0.5},
 --!   { name: "SPI_READ_DATA_O",  wave: "l....|.5..", data: ["read"] , "phase":0.5},
---!   { name: "SPI_READY_O",      wave: "h.l..|..h.", "phase":0.5}
+--!   { name: "SPI_CS_O",   wave: "h.l..|..h.", "phase":0.5}
 --! ]}
 
 --! SPI interfaz
@@ -15,6 +15,7 @@
 --!   { name: "SCK",      wave: "lp|.....l" },
 --!   { name: "MOSI",     wave: "l3|.....0", data: ["WRITE"] },
 --!   { name: "MISO",     wave: "l4|.....0", data: ["READ"] },
+--!   { name: "CS",       wave: "hl|.....h"},
 --!   {},
 --!   { name: "Estado",   wave: "l5|555550", data: ["1", "4/12", "5/13", "6/14", "7/15", "8/16"] }
 --! ]}
@@ -44,8 +45,9 @@ entity SPI is
     SPI_WRITE_DATA_I : in std_logic_vector(15 downto 0);
     --! Dato leído por SPI.
     SPI_READ_DATA_O : out std_logic_vector(15 downto 0);
-    --! Señal que indica que el SPI está activo. Nivel alto: esto operativo.
-    SPI_READY_O : out std_logic;
+    --! Señal que indica que el SPI está activo. Nivel bajo: esto operativo.
+    --! Este puerto hace la doble funcionalidad, puerto CS y puerto READY.
+    SPI_CS_O : out std_logic;
 
     -- SPI
     --! Señal de reloj del SPI.
@@ -88,10 +90,10 @@ architecture rtl of SPI is
   --! Contador de medio periodo de SPI.
   constant C_SPI_MID_PERIOD : integer := C_PULSES_PERIOD/2;
   --! Contador de ciclos de reloj para medio periodo.
-  signal r_sdk_cont : integer range 0 to C_SPI_MID_PERIOD;
+  signal r_sck_cont : integer range 0 to C_SPI_MID_PERIOD;
 
   --! Señal de reloj del SPI.
-  signal s_sdk : std_logic;
+  signal s_sck : std_logic;
   --! Señales con los detectores de flancos para el SPI.
   signal s_rise_edge, s_fall_edge : std_logic;
   --! Registro con los datos de escritura y lectura.
@@ -166,14 +168,14 @@ begin
   begin
     if rising_edge(CLK_I) then
       if RST_N_I = '0' then
-        r_sdk_cont <= 0;
+        r_sck_cont <= 0;
       elsif EN_I = '1' then
         if re_state = SM_IDLE then
-          r_sdk_cont <= 0;
+          r_sck_cont <= 0;
         else
-          r_sdk_cont <= r_sdk_cont + 1;
-          if r_sdk_cont >= C_SPI_MID_PERIOD - 1 then
-            r_sdk_cont <= 0;
+          r_sck_cont <= r_sck_cont + 1;
+          if r_sck_cont >= C_SPI_MID_PERIOD - 1 then
+            r_sck_cont <= 0;
           end if;
         end if;
       end if;
@@ -181,20 +183,20 @@ begin
   end process;
 
   --! @brief Asignación de reloj de salida.
-  SCK_ASSIGN : SCK_O <= s_sdk;
+  SCK_ASSIGN : SCK_O <= s_sck;
 
   --! @brief Este process genera el reloj de SPI.
   SDK_GENERATOR : process (CLK_I)
   begin
     if rising_edge(CLK_I) then
       if RST_N_I = '0' then
-        s_sdk <= '0';
+        s_sck <= '0';
       elsif EN_I = '1' then
         if re_state = SM_IDLE then
-          s_sdk <= '0';
+          s_sck <= '0';
         else
-          if r_sdk_cont >= C_SPI_MID_PERIOD - 1 then
-            s_sdk <= not s_sdk;
+          if r_sck_cont >= C_SPI_MID_PERIOD - 1 then
+            s_sck <= not s_sck;
           end if;
         end if;
       end if;
@@ -206,7 +208,7 @@ begin
     port map
     (
       CLK_I          => CLK_I,
-      INPUT_SIGNAL_I => s_sdk,
+      INPUT_SIGNAL_I => s_sck,
       RISING_EDGE_O  => s_rise_edge,
       FALLING_EDGE_O => s_fall_edge,
       EDGES_O        => open
@@ -277,16 +279,16 @@ begin
     end if;
   end process;
 
-  --! @brief Este process genera la salida del puerto READY.
-  READY_GENERATOR : process (CLK_I)
+  --! @brief Este process genera la salida del puerto READY y CS.
+  CS_GENERATOR : process (CLK_I)
   begin
     if rising_edge(CLK_I) then
       if RST_N_I = '0' then
-        SPI_READY_O <= '0';
+        SPI_CS_O <= '0';
       elsif EN_I = '1' then
-        SPI_READY_O <= '0';
+        SPI_CS_O <= '0';
         if re_state = SM_IDLE then
-          SPI_READY_O <= '1';
+          SPI_CS_O <= '1';
         end if;
       end if;
     end if;
