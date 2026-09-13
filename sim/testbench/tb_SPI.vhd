@@ -20,7 +20,7 @@ architecture bench of SPI_tb is
   signal SPI_WRITE16_I    : std_logic;
   signal SPI_WRITE_DATA_I : std_logic_vector(15 downto 0);
   signal SPI_READ_DATA_O  : std_logic_vector(15 downto 0);
-  signal SPI_READY_O      : std_logic;
+  signal CS               : std_logic;
   signal SCK_O            : std_logic;
   signal MOSI_O           : std_logic;
   signal MISO_I           : std_logic;
@@ -40,7 +40,7 @@ begin
       SPI_WRITE16_I    => SPI_WRITE16_I,
       SPI_WRITE_DATA_I => SPI_WRITE_DATA_I,
       SPI_READ_DATA_O  => SPI_READ_DATA_O,
-      SPI_READY_O      => SPI_READY_O,
+      CS               => CS,
       SCK_O            => SCK_O,
       MOSI_O           => MOSI_O,
       MISO_I           => MISO_I
@@ -54,11 +54,11 @@ begin
     SPI_WRITE8_I  <= '0';
     wait for 4 us;
     SPI_WRITE8_I <= '1';
-    wait for CLK_PERIOD*2;
+    wait for CLK_PERIOD * 2;
     SPI_WRITE8_I <= '0';
     wait for 25 us;
     SPI_WRITE16_I <= '1';
-    wait for CLK_PERIOD*2;
+    wait for CLK_PERIOD * 2;
     SPI_WRITE16_I <= '0';
     wait;
   end process;

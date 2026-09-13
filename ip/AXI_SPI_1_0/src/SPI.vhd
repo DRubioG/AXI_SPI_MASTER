@@ -6,7 +6,7 @@
 --!   { name: "SPI_WRITE8_I",     wave: "l.hl.|....", data: ["WRITE"] , "phase":0.5},
 --!   { name: "SPI_WRITE_DATA_I", wave: "l3.0.|....", data: ["data"] , "phase":0.5},
 --!   { name: "SPI_READ_DATA_O",  wave: "l....|.5..", data: ["read"] , "phase":0.5},
---!   { name: "SPI_CS_O",   wave: "h.l..|..h.", "phase":0.5}
+--!   { name: "CS",   wave: "h.l..|..h.", "phase":0.5}
 --! ]}
 
 --! SPI interfaz
@@ -45,9 +45,6 @@ entity SPI is
     SPI_WRITE_DATA_I : in std_logic_vector(15 downto 0);
     --! Dato leído por SPI.
     SPI_READ_DATA_O : out std_logic_vector(15 downto 0);
-    --! Señal que indica que el SPI está activo. Nivel bajo: esto operativo.
-    --! Este puerto hace la doble funcionalidad, puerto CS y puerto READY.
-    SPI_CS_O : out std_logic;
 
     -- SPI
     --! Señal de reloj del SPI.
@@ -55,7 +52,10 @@ entity SPI is
     --! Señal MOSI(Master Output Slave Input).
     MOSI_O : out std_logic;
     --! Señal MISO(Master Input Slave Output).
-    MISO_I : in std_logic
+    MISO_I : in std_logic;
+    --! Señal que indica que el SPI está activo. Nivel bajo: esto operativo.
+    --! Este puerto hace la doble funcionalidad, puerto CS y puerto READY.
+    CS : out std_logic
   );
 end entity SPI;
 
@@ -284,11 +284,11 @@ begin
   begin
     if rising_edge(CLK_I) then
       if RST_N_I = '0' then
-        SPI_CS_O <= '0';
+        CS <= '0';
       elsif EN_I = '1' then
-        SPI_CS_O <= '0';
+        CS <= '0';
         if re_state = SM_IDLE then
-          SPI_CS_O <= '1';
+          CS <= '1';
         end if;
       end if;
     end if;

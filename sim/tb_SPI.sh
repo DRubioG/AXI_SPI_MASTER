@@ -3,7 +3,7 @@ nvc -a ../ip/AXI_SPI_1_0/src/edge_detector.vhd
 nvc -a ../ip/AXI_SPI_1_0/src/SPI.vhd
 
 # testbench
-nvc -a ../testbench/tb_SPI.vhd
+nvc -a ./testbench/tb_SPI.vhd
 
 # elaborate
 nvc -e SPI_tb
