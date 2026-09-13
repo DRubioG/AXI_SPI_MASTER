@@ -460,7 +460,7 @@ begin
       SPI_WRITE16_I    => slv_reg0(2),
       SPI_WRITE_DATA_I => slv_reg1(15 downto 0),
       SPI_READ_DATA_O  => slv_reg2(15 downto 0),
-      SPI_CS_READY_O   => s_CS,
+      SPI_CS_O         => s_CS,
       SCK_O            => SCK,
       MOSI_O           => MOSI,
       MISO_I           => MISO
