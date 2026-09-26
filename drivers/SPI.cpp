@@ -17,17 +17,6 @@ void SPI::configureBitOrder(BitOrder order)
     // Limpiar el registro que se ve a escribir.
     uint32_t reg_blank = reg & ~0x20;
 
-    // Seleción del modo.
-    // int value = mode;
-    // if (mode == SPI_MODE0)
-    // {
-    //     value = 0;
-    // }
-    // else if (mode == SPI_MODE1)
-    // {
-    //     value = mode;
-    // }
-
     // Creación del valor a escribir en memoria.
     uint32_t write_reg = reg_blank | (order << MLSB_BIT);
     // Escritura del valor del registro de configuración.
@@ -42,17 +31,6 @@ void SPI::configureMode(SPIMode mode)
 
     // Limpiar el registro que se ve a escribir.
     uint32_t reg_blank = reg & ~0x18;
-
-    // Seleción del modo.
-    // int value = mode;
-    // if (mode == SPI_MODE0)
-    // {
-    //     value = 0;
-    // }
-    // else if (mode == SPI_MODE1)
-    // {
-    //     value = mode;
-    // }
 
     // Creación del valor a escribir en memoria.
     uint32_t write_reg = reg_blank | (mode << MODE_BIT);
