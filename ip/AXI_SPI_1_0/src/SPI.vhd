@@ -105,6 +105,16 @@ architecture rtl of SPI is
   signal s_rise_edge, s_fall_edge : std_logic;
   --! Registro con los datos de escritura y lectura.
   signal r_write, r_read : std_logic_vector(15 downto 0);
+
+  --! Modo 0 de operación del SPI.
+  constant C_MODO_0 : std_logic_vector(1 downto 0) := "00";
+  --! Modo 1 de operación del SPI.
+  constant C_MODO_1 : std_logic_vector(1 downto 0) := "01";
+  --! Modo 2 de operación del SPI.
+  constant C_MODO_2 : std_logic_vector(1 downto 0) := "10";
+  --! Modo 3 de operación del SPI.
+  constant C_MODO_3 : std_logic_vector(1 downto 0) := "11";
+
 begin
 
   --! @brief Detector de flancos de la señal de 8 bits.
@@ -145,7 +155,7 @@ begin
 
           when SM_WAIT8 =>
             re_state <= SM_WAIT8;
-            if MODO_I = "01" or MODO_I = "10" then
+            if MODO_I = C_MODO_1 or MODO_I = C_MODO_2 then
               if s_fall_edge = '1' then
                 re_state <= SM_WRITE8;
               end if;
@@ -161,7 +171,7 @@ begin
 
           when SM_WAIT16 =>
             re_state <= SM_WAIT16;
-            if MODO_I = "01" or MODO_I = "10" then
+            if MODO_I = C_MODO_1 or MODO_I = C_MODO_2 then
               if s_fall_edge = '1' then
                 re_state <= SM_WRITE16;
               end if;
@@ -270,11 +280,11 @@ begin
         elsif re_state = SM_WAIT8 then
           r_write <= SPI_WRITE_DATA_I(7 downto 0) & x"00"; -- 8 bits + 0's
         else
-          if MODO_I = "00" or MODO_I = "11" then
+          if MODO_I = C_MODO_0 or MODO_I = C_MODO_3 then
             if s_fall_edge = '1' then
               r_write <= r_write(14 downto 0) & r_write(0);
             end if;
-          elsif MODO_I = "01" or MODO_I = "10" then
+          elsif MODO_I = C_MODO_1 or MODO_I = C_MODO_2 then
             if s_rise_edge = '1' then
               r_write <= r_write(14 downto 0) & r_write(0);
             end if;
@@ -298,11 +308,11 @@ begin
           r_read <= (others => '0');
         elsif re_state = SM_WRITE8 or re_state = SM_WRITE16 then
 
-          if MODO_I = "00" or MODO_I = "11" then
+          if MODO_I = C_MODO_0 or MODO_I = C_MODO_3 then
             if s_rise_edge = '1' then
               r_read <= r_read(14 downto 0) & MISO_I;
             end if;
-          elsif MODO_I = "01" or MODO_I = "10" then
+          elsif MODO_I = C_MODO_1 or MODO_I = C_MODO_2 then
             if s_fall_edge = '1' then
               r_read <= r_read(14 downto 0) & MISO_I;
             end if;
