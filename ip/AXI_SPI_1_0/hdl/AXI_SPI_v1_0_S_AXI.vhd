@@ -12,6 +12,8 @@
 --! - **EN**: Bit de habilitación del bloque IP.
 --! - **W8**: Bit para transmitir/leer 8 bits.
 --! - **W16**: Bit para transmitir/leer 16 bits.
+--! - **MODO**: Modo de operación del SPI.
+--!
 --! {
 --!       "config": { 
 --!         "hspace": 1000
@@ -20,8 +22,15 @@
 --!     { "name": "EN",   		"bits": 1, "attr": "w", "type": 4},
 --!     { "name": "W8",   		"bits": 1, "attr": "w", "type": 5 },
 --!     { "name": "W16",   		"bits": 1, "attr": "w", "type": 6 },
---!     { "name": "Reserved",   "bits": 29, "attr": "", "type":"not used" }
+--!     { "name": "MODO",   		"bits": 2, "attr": "w", "type": 7 },
+--!     { "name": "Reserved",   "bits": 27, "attr": "", "type":"not used" }
 --! ]}
+--! | Modo | Valor |
+--! |------|-------|
+--! |   0  |   00  |
+--! |   1  |   01  |
+--! |   2  |   10  |
+--! |   3  |   11  |
 --! WRITE
 --! --
 --! - **WRITE**: Dato a escribir por SPI.
@@ -458,6 +467,7 @@ begin
       EN_I             => slv_reg0(0),
       SPI_WRITE8_I     => slv_reg0(1),
       SPI_WRITE16_I    => slv_reg0(2),
+      MODO_I           => slv_reg0(4 downto 3),
       SPI_WRITE_DATA_I => slv_reg1(15 downto 0),
       SPI_READ_DATA_O  => slv_reg2(15 downto 0),
       CS               => s_CS,

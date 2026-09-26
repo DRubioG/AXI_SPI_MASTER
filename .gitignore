@@ -1,0 +1,9 @@
+sim/work/_index
+sim/work/_NVC_LIB
+sim/work/WORK.EDGE_DETECTOR
+sim/work/WORK.EDGE_DETECTOR-RTL
+sim/work/WORK.SPI
+sim/work/WORK.SPI_TB
+sim/work/WORK.SPI_TB-BENCH
+sim/work/WORK.SPI_TB.elab
+sim/work/WORK.SPI-RTL

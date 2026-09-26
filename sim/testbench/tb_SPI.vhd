@@ -24,6 +24,7 @@ architecture bench of SPI_tb is
   signal SCK_O            : std_logic;
   signal MOSI_O           : std_logic;
   signal MISO_I           : std_logic;
+  signal MODO             : std_logic_vector(1 downto 0) := "01";
 begin
 
   SPI_inst : entity work.SPI
@@ -38,17 +39,18 @@ begin
       EN_I             => EN_I,
       SPI_WRITE8_I     => SPI_WRITE8_I,
       SPI_WRITE16_I    => SPI_WRITE16_I,
+      MODO_I             => MODO,
       SPI_WRITE_DATA_I => SPI_WRITE_DATA_I,
       SPI_READ_DATA_O  => SPI_READ_DATA_O,
       CS               => CS,
       SCK_O            => SCK_O,
       MOSI_O           => MOSI_O,
-      MISO_I           => MISO_I
+      MISO_I           => MOSI_O
     );
   CLK_I            <= not CLK_I after CLK_PERIOD;
   RST_N_I          <= '0', '1' after 50 ns;
   EN_I             <= '1';
-  SPI_WRITE_DATA_I <= x"000F";
+  SPI_WRITE_DATA_I <= x"000D";
   process begin
     SPI_WRITE16_I <= '0';
     SPI_WRITE8_I  <= '0';

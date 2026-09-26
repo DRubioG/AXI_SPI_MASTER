@@ -41,6 +41,13 @@ entity SPI is
     SPI_WRITE8_I : in std_logic;
     --! Señal de escritura de 16 bits. Activo a nivel alto.
     SPI_WRITE16_I : in std_logic;
+    --! Modo de operación del SPI.
+    --! Modos: 
+    --! 0 = Modo 0  /
+    --! 1 = Modo 1  /
+    --! 2 = Modo 2  /
+    --! 3 = Modo 3  
+    MODO_I : in std_logic_vector(1 downto 0);
     --! Dato a transmitir por SPI.
     SPI_WRITE_DATA_I : in std_logic_vector(15 downto 0);
     --! Dato leído por SPI.
@@ -98,7 +105,6 @@ architecture rtl of SPI is
   signal s_rise_edge, s_fall_edge : std_logic;
   --! Registro con los datos de escritura y lectura.
   signal r_write, r_read : std_logic_vector(15 downto 0);
-
 begin
 
   --! @brief Detector de flancos de la señal de 8 bits.
@@ -138,7 +144,14 @@ begin
             end if;
 
           when SM_WAIT8 =>
-            re_state <= SM_WRITE8;
+            re_state <= SM_WAIT8;
+            if MODO_I = "01" or MODO_I = "10" then
+              if s_fall_edge = '1' then
+                re_state <= SM_WRITE8;
+              end if;
+            else
+              re_state <= SM_WRITE8;
+            end if;
 
           when SM_WRITE8 =>
             re_state <= SM_WRITE8;
@@ -147,7 +160,14 @@ begin
             end if;
 
           when SM_WAIT16 =>
-            re_state <= SM_WRITE16;
+            re_state <= SM_WAIT16;
+            if MODO_I = "01" or MODO_I = "10" then
+              if s_fall_edge = '1' then
+                re_state <= SM_WRITE16;
+              end if;
+            else
+              re_state <= SM_WRITE16;
+            end if;
 
           when SM_WRITE16 =>
             re_state <= SM_WRITE16;
@@ -204,7 +224,7 @@ begin
   end process;
 
   --! @brief Este es el detector de flancos para el reloj del SPI.
-  SDK_edge_detector_inst : entity work.edge_detector
+  SCK_edge_detector_inst : entity work.edge_detector
     port map
     (
       CLK_I          => CLK_I,
@@ -246,12 +266,18 @@ begin
         if re_state = SM_IDLE then
           r_write <= (others => '0');
         elsif re_state = SM_WAIT16 then
-          r_write <= SPI_WRITE_DATA_I;  -- 16 bits
-        elsif re_state = SM_WAIT8 then 
-          r_write <= SPI_WRITE_DATA_I(7 downto 0) & x"00";  -- 8 bits + 0's
+          r_write <= SPI_WRITE_DATA_I; -- 16 bits
+        elsif re_state = SM_WAIT8 then
+          r_write <= SPI_WRITE_DATA_I(7 downto 0) & x"00"; -- 8 bits + 0's
         else
-          if s_fall_edge = '1' then
-            r_write <=  r_write(14 downto 0) & r_write(0);
+          if MODO_I = "00" or MODO_I = "11" then
+            if s_fall_edge = '1' then
+              r_write <= r_write(14 downto 0) & r_write(0);
+            end if;
+          elsif MODO_I = "01" or MODO_I = "10" then
+            if s_rise_edge = '1' then
+              r_write <= r_write(14 downto 0) & r_write(0);
+            end if;
           end if;
         end if;
       end if;
@@ -271,8 +297,15 @@ begin
         if re_state = SM_WAIT8 or re_state = SM_WAIT16 then
           r_read <= (others => '0');
         elsif re_state = SM_WRITE8 or re_state = SM_WRITE16 then
-          if s_rise_edge = '1' then
-            r_read <= r_read(14 downto 0) & MISO_I;
+
+          if MODO_I = "00" or MODO_I = "11" then
+            if s_rise_edge = '1' then
+              r_read <= r_read(14 downto 0) & MISO_I;
+            end if;
+          elsif MODO_I = "01" or MODO_I = "10" then
+            if s_fall_edge = '1' then
+              r_read <= r_read(14 downto 0) & MISO_I;
+            end if;
           end if;
         end if;
       end if;
