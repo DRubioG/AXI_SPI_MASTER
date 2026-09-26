@@ -12,6 +12,9 @@
 --! - **EN**: Bit de habilitación del bloque IP.
 --! - **W8**: Bit para transmitir/leer 8 bits.
 --! - **W16**: Bit para transmitir/leer 16 bits.
+--! - **MODO**: Modo de operación del SPI.
+--! - **MLSB**: Selección de tipo de lectura/escritura.
+--!
 --! {
 --!       "config": { 
 --!         "hspace": 1000
@@ -20,8 +23,16 @@
 --!     { "name": "EN",   		"bits": 1, "attr": "w", "type": 4},
 --!     { "name": "W8",   		"bits": 1, "attr": "w", "type": 5 },
 --!     { "name": "W16",   		"bits": 1, "attr": "w", "type": 6 },
---!     { "name": "Reserved",   "bits": 29, "attr": "", "type":"not used" }
+--!     { "name": "MODO",   		"bits": 2, "attr": "w", "type": 7 },
+--!     { "name": "MLSB",   		"bits": 1, "attr": "w", "type": 3 },
+--!     { "name": "Reserved",   "bits": 26, "attr": "", "type":"not used" }
 --! ]}
+--! | Modo | Valor |
+--! |------|-------|
+--! |   0  |   00  |
+--! |   1  |   01  |
+--! |   2  |   10  |
+--! |   3  |   11  |
 --! WRITE
 --! --
 --! - **WRITE**: Dato a escribir por SPI.

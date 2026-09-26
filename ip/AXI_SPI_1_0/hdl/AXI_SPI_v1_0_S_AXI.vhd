@@ -13,6 +13,7 @@
 --! - **W8**: Bit para transmitir/leer 8 bits.
 --! - **W16**: Bit para transmitir/leer 16 bits.
 --! - **MODO**: Modo de operación del SPI.
+--! - **MLSB**: Selección de tipo de lectura/escritura.
 --!
 --! {
 --!       "config": { 
@@ -23,7 +24,8 @@
 --!     { "name": "W8",   		"bits": 1, "attr": "w", "type": 5 },
 --!     { "name": "W16",   		"bits": 1, "attr": "w", "type": 6 },
 --!     { "name": "MODO",   		"bits": 2, "attr": "w", "type": 7 },
---!     { "name": "Reserved",   "bits": 27, "attr": "", "type":"not used" }
+--!     { "name": "MLSB",   		"bits": 1, "attr": "w", "type": 3 },
+--!     { "name": "Reserved",   "bits": 26, "attr": "", "type":"not used" }
 --! ]}
 --! | Modo | Valor |
 --! |------|-------|
@@ -468,6 +470,7 @@ begin
       SPI_WRITE8_I     => slv_reg0(1),
       SPI_WRITE16_I    => slv_reg0(2),
       MODO_I           => slv_reg0(4 downto 3),
+      MSB_LSB_I        => slv_reg0(5),
       SPI_WRITE_DATA_I => slv_reg1(15 downto 0),
       SPI_READ_DATA_O  => slv_reg2(15 downto 0),
       CS               => s_CS,

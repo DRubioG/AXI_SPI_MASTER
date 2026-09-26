@@ -8,6 +8,58 @@
  */
 #include "SPI.h"
 
+// Configuración del orden de lectura/escritura.
+void SPI::configureBitOrder(BitOrder order)
+{
+    // Lectura del valor del registro.
+    uint32_t reg = Xil_In32(_address + CNTRL_REG);
+
+    // Limpiar el registro que se ve a escribir.
+    uint32_t reg_blank = reg & ~0x20;
+
+    // Seleción del modo.
+    // int value = mode;
+    // if (mode == SPI_MODE0)
+    // {
+    //     value = 0;
+    // }
+    // else if (mode == SPI_MODE1)
+    // {
+    //     value = mode;
+    // }
+
+    // Creación del valor a escribir en memoria.
+    uint32_t write_reg = reg_blank | (order << MLSB_BIT);
+    // Escritura del valor del registro de configuración.
+    Xil_Out32(_address + CNTRL_REG, write_reg);
+}
+
+// Configuración del modo del SPI.
+void SPI::configureMode(SPIMode mode)
+{
+    // Lectura del valor del registro.
+    uint32_t reg = Xil_In32(_address + CNTRL_REG);
+
+    // Limpiar el registro que se ve a escribir.
+    uint32_t reg_blank = reg & ~0x18;
+
+    // Seleción del modo.
+    // int value = mode;
+    // if (mode == SPI_MODE0)
+    // {
+    //     value = 0;
+    // }
+    // else if (mode == SPI_MODE1)
+    // {
+    //     value = mode;
+    // }
+
+    // Creación del valor a escribir en memoria.
+    uint32_t write_reg = reg_blank | (mode << MODE_BIT);
+    // Escritura del valor del registro de configuración.
+    Xil_Out32(_address + CNTRL_REG, write_reg);
+}
+
 // Constructor de la clase.
 SPI::SPI(uint32_t address)
 {
@@ -29,6 +81,17 @@ void SPI::begin()
     Xil_Out32(_address + CNTRL_REG, reg | (1 << ENABLE_BIT));
 }
 
+// Este método inicializa el SPI con los parámetros de entrada.
+void SPI::beginTransaction(const SPISettings &settings)
+{
+    // Configuración del orden de lectura/escritura.
+    configureBitOrder(settings.bitOrder);
+    // Configuración del modo del SPI.
+    configureMode(settings.mode);
+    // Habilitación del SPI.
+    begin();
+}
+
 // Este método transmite el dato por SPI.
 int SPI::transfer(int value)
 {
@@ -43,7 +106,8 @@ int SPI::transfer(int value)
     // Bajar el valor de la escritura.
     Xil_Out32(_address + CNTRL_REG, reg);
     // Esperar a que SPI termine.
-    while((Xil_In32(_address + READ_REG)>>RDY_BIT)&0x1 == 0);
+    while (((Xil_In32(_address + READ_REG) >> RDY_BIT) & 0x1) == 0)
+        ;
     // Dato leído.
     int read_data = Xil_In32(_address + READ_REG) & 0xFF;
     // Retornar el dato de 16 bits.
@@ -69,7 +133,8 @@ int *SPI::transfer(int *buffer, int size)
         // Bajar el valor de la escritura.
         Xil_Out32(_address + CNTRL_REG, reg);
         // Esperar a que SPI termine.
-        while(((Xil_In32(_address + READ_REG)>>RDY_BIT)&0x1) == 0);
+        while (((Xil_In32(_address + READ_REG) >> RDY_BIT) & 0x1) == 0)
+            ;
         // Dato leído.
         int read_data = Xil_In32(_address + READ_REG) & 0xFF;
         // Poner en el registro el valor.
@@ -93,7 +158,8 @@ uint16_t SPI::transfer16(uint16_t value)
     // Bajar el valor de la escritura.
     Xil_Out32(_address + CNTRL_REG, reg);
     // Esperar a que SPI termine.
-    while((Xil_In32(_address + READ_REG)>>RDY_BIT)&0x1 == 0);
+    while ((Xil_In32(_address + READ_REG) >> RDY_BIT) & 0x1 == 0)
+        ;
     // Dato leído.
     uint16_t read_data = Xil_In32(_address + READ_REG) & 0xFFFF;
     // Poner en el registro el valor.

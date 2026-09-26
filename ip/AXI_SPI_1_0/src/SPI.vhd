@@ -45,9 +45,11 @@ entity SPI is
     --! Modos: 
     --! 0 = Modo 0  /
     --! 1 = Modo 1  /
-    --! 2 = Modo 2  /
-    --! 3 = Modo 3  
+    --! El resto de modos no está contemplado.
     MODO_I : in std_logic_vector(1 downto 0);
+    --! Este puerto selecciona el tipo de lectura que se hace, si de MSB a LSB o de LSB a MSB.
+    --! Si es 0, se lee de MSB a LSB. Si es 1, se lee de LSB a MSB.
+    MSB_LSB_I : in std_logic;
     --! Dato a transmitir por SPI.
     SPI_WRITE_DATA_I : in std_logic_vector(15 downto 0);
     --! Dato leído por SPI.
@@ -79,7 +81,9 @@ architecture rtl of SPI is
     --! Estado de espera para escribir 16 bits.
     SM_WAIT16,
     --! Estado de escritura de 16 bits.
-    SM_WRITE16
+    SM_WRITE16,
+    --! Registro previo para volver la máquina de estados al estado inicial.
+    SM_WAIT_FINISH
   );
 
   --! Registro con el valor de la máquina de estado.
@@ -106,14 +110,19 @@ architecture rtl of SPI is
   --! Registro con los datos de escritura y lectura.
   signal r_write, r_read : std_logic_vector(15 downto 0);
 
+  --! Contador para reiniciar la máquina de estados.
+  signal r_cont_wait : integer range 0 to C_PULSES_PERIOD;
   --! Modo 0 de operación del SPI.
   constant C_MODO_0 : std_logic_vector(1 downto 0) := "00";
   --! Modo 1 de operación del SPI.
   constant C_MODO_1 : std_logic_vector(1 downto 0) := "01";
   --! Modo 2 de operación del SPI.
-  constant C_MODO_2 : std_logic_vector(1 downto 0) := "10";
+  -- constant C_MODO_2 : std_logic_vector(1 downto 0) := "10";
   --! Modo 3 de operación del SPI.
-  constant C_MODO_3 : std_logic_vector(1 downto 0) := "11";
+  -- constant C_MODO_3 : std_logic_vector(1 downto 0) := "11";
+
+  --! Constante con 8 ceros.
+  constant ZEROS : std_logic_vector(7 downto 0) := (others => '0');
 
 begin
 
@@ -127,6 +136,7 @@ begin
       FALLING_EDGE_O => open,
       EDGES_O        => open
     );
+
   --! @brief Detector de flancos de la señal de 16 bits.
   SPI16_edge_detector_inst : entity work.edge_detector
     port map
@@ -137,6 +147,7 @@ begin
       FALLING_EDGE_O => open,
       EDGES_O        => open
     );
+
   --! @brief Este process controla la máquina de estados.
   FSM_PROCESS : process (CLK_I)
   begin
@@ -155,7 +166,7 @@ begin
 
           when SM_WAIT8 =>
             re_state <= SM_WAIT8;
-            if MODO_I = C_MODO_1 or MODO_I = C_MODO_2 then
+            if MODO_I = C_MODO_1 then
               if s_fall_edge = '1' then
                 re_state <= SM_WRITE8;
               end if;
@@ -166,12 +177,12 @@ begin
           when SM_WRITE8 =>
             re_state <= SM_WRITE8;
             if r_cont >= C_DATA8 - 1 and s_fall_edge = '1' then
-              re_state <= SM_IDLE;
+              re_state <= SM_WAIT_FINISH;
             end if;
 
           when SM_WAIT16 =>
             re_state <= SM_WAIT16;
-            if MODO_I = C_MODO_1 or MODO_I = C_MODO_2 then
+            if MODO_I = C_MODO_1 then
               if s_fall_edge = '1' then
                 re_state <= SM_WRITE16;
               end if;
@@ -182,6 +193,12 @@ begin
           when SM_WRITE16 =>
             re_state <= SM_WRITE16;
             if r_cont >= C_DATA16 - 1 and s_fall_edge = '1' then
+              re_state <= SM_WAIT_FINISH;
+            end if;
+
+          when SM_WAIT_FINISH =>
+            re_state <= SM_WAIT_FINISH;
+            if r_cont_wait >= C_PULSES_PERIOD - 1 then
               re_state <= SM_IDLE;
             end if;
 
@@ -200,7 +217,7 @@ begin
       if RST_N_I = '0' then
         r_sck_cont <= 0;
       elsif EN_I = '1' then
-        if re_state = SM_IDLE then
+        if re_state = SM_IDLE or re_state = SM_WAIT_FINISH then
           r_sck_cont <= 0;
         else
           r_sck_cont <= r_sck_cont + 1;
@@ -222,7 +239,7 @@ begin
       if RST_N_I = '0' then
         s_sck <= '0';
       elsif EN_I = '1' then
-        if re_state = SM_IDLE then
+        if re_state = SM_IDLE or re_state = SM_WAIT_FINISH then
           s_sck <= '0';
         else
           if r_sck_cont >= C_SPI_MID_PERIOD - 1 then
@@ -251,7 +268,7 @@ begin
       if RST_N_I = '0' then
         r_cont <= 0;
       elsif EN_I = '1' then
-        if re_state = SM_IDLE then
+        if re_state = SM_IDLE or re_state = SM_WAIT_FINISH then
           r_cont <= 0;
         else
           if s_fall_edge = '1' then
@@ -274,19 +291,30 @@ begin
         r_write <= (others => '0');
       elsif EN_I = '1' then
         if re_state = SM_IDLE then
+          -- reseteo del valor de escritura
           r_write <= (others => '0');
         elsif re_state = SM_WAIT16 then
+          -- Asignación del valor de escritura de 16 bits
           r_write <= SPI_WRITE_DATA_I; -- 16 bits
         elsif re_state = SM_WAIT8 then
-          r_write <= SPI_WRITE_DATA_I(7 downto 0) & x"00"; -- 8 bits + 0's
+          -- Asignación del valor de escritura de 8 + 8 ceros.
+          r_write <= SPI_WRITE_DATA_I(7 downto 0) & ZEROS; -- 8 bits + 0's
         else
-          if MODO_I = C_MODO_0 or MODO_I = C_MODO_3 then
+          if MODO_I = C_MODO_0 then
             if s_fall_edge = '1' then
-              r_write <= r_write(14 downto 0) & r_write(0);
+              if MSB_LSB_I = '0' then
+                r_write <= r_write(14 downto 0) & r_write(0);
+              else
+                r_write <= r_write(0) & r_write(15 downto 1);
+              end if;
             end if;
-          elsif MODO_I = C_MODO_1 or MODO_I = C_MODO_2 then
+          elsif MODO_I = C_MODO_1 then
             if s_rise_edge = '1' then
-              r_write <= r_write(14 downto 0) & r_write(0);
+              if MSB_LSB_I = '0' then
+                r_write <= r_write(14 downto 0) & r_write(0);
+              else
+                r_write <= r_write(0) & r_write(15 downto 1);
+              end if;
             end if;
           end if;
         end if;
@@ -306,18 +334,57 @@ begin
       elsif EN_I = '1' then
         if re_state = SM_WAIT8 or re_state = SM_WAIT16 then
           r_read <= (others => '0');
-        elsif re_state = SM_WRITE8 or re_state = SM_WRITE16 then
+        elsif re_state = SM_WRITE16 then
 
-          if MODO_I = C_MODO_0 or MODO_I = C_MODO_3 then
+          if MODO_I = C_MODO_0 then
             if s_rise_edge = '1' then
-              r_read <= r_read(14 downto 0) & MISO_I;
+              if MSB_LSB_I = '0' then
+                -- Desplazamiento del valor de lectura desde la derecha.
+                r_read <= r_read(14 downto 0) & MISO_I;
+              else
+                -- Desplazamiento del valor de lectura desde la izquierda.
+                r_read <= MISO_I & r_read(15 downto 1);
+              end if;
             end if;
-          elsif MODO_I = C_MODO_1 or MODO_I = C_MODO_2 then
+          elsif MODO_I = C_MODO_1 then
             if s_fall_edge = '1' then
-              r_read <= r_read(14 downto 0) & MISO_I;
+              if MSB_LSB_I = '0' then
+                -- Desplazamiento del valor de lectura desde la derecha.
+                r_read <= r_read(14 downto 0) & MISO_I;
+              else
+                -- Desplazamiento del valor de lectura desde la izquierda.
+                r_read <= MISO_I & r_read(15 downto 1);
+              end if;
+            end if;
+          end if;
+
+        elsif re_state = SM_WRITE8 then
+
+          if MODO_I = C_MODO_0 then
+            if s_rise_edge = '1' then
+              if MSB_LSB_I = '0' then
+                -- Desplazamiento del valor de lectura desde la derecha.
+                r_read <= r_read(14 downto 0) & MISO_I;
+              else
+                -- Desplazamiento del valor de lectura desde la izquierda.
+                -- Se utilizan solo los últimos 8 bits.
+                r_read <= ZEROS & MISO_I & r_read(7 downto 1);
+              end if;
+            end if;
+          elsif MODO_I = C_MODO_1 then
+            if s_fall_edge = '1' then
+              if MSB_LSB_I = '0' then
+                -- Desplazamiento del valor de lectura desde la derecha.
+                r_read <= r_read(14 downto 0) & MISO_I;
+              else
+                -- Desplazamiento del valor de lectura desde la izquierda.
+                -- Se utilizan solo los últimos 8 bits.
+                r_read <= ZEROS & MISO_I & r_read(7 downto 1);
+              end if;
             end if;
           end if;
         end if;
+
       end if;
     end if;
   end process;
@@ -332,6 +399,21 @@ begin
         CS <= '0';
         if re_state = SM_IDLE then
           CS <= '1';
+        end if;
+      end if;
+    end if;
+  end process;
+
+  --! Este process cuenta el número de ciclos de reloj para poder levantar la línea CS.
+  FINISH_COUNTER : process (CLK_I)
+  begin
+    if rising_edge(CLK_I) then
+      if RST_N_I = '0' then
+        r_cont_wait <= 0;
+      elsif EN_I = '1' then
+        r_cont_wait <= 0;
+        if re_state = SM_WAIT_FINISH then
+          r_cont_wait <= r_cont_wait + 1;
         end if;
       end if;
     end if;
